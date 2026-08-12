@@ -6,9 +6,9 @@
 :root {
   /* 日间模式 */
   --bg-primary: transparent;
-  --bg-secondary: rgba(255,255,255,0.42);
-  --bg-card: rgba(255,255,255,0.5);
-  --bg-navbar: rgba(255,255,255,0.35);
+  --bg-secondary: rgba(255,255,255,0.32);
+  --bg-card: rgba(255,255,255,0.38);
+  --bg-navbar: rgba(255,255,255,0.25);
   --text-primary: #1a1a2e;
   --text-secondary: #555555;
   --text-muted: #888888;
@@ -24,9 +24,9 @@
 
 [data-theme="night"] {
   --bg-primary: transparent;
-  --bg-secondary: rgba(22,27,34,0.45);
-  --bg-card: rgba(22,27,34,0.5);
-  --bg-navbar: rgba(13,17,23,0.35);
+  --bg-secondary: rgba(22,27,34,0.32);
+  --bg-card: rgba(22,27,34,0.38);
+  --bg-navbar: rgba(13,17,23,0.25);
   --text-primary: #e6edf3;
   --text-secondary: #b0b8c4;
   --text-muted: #6e7681;
@@ -547,7 +547,29 @@ a:hover { color: var(--accent-hover); }
   margin-bottom: 4px;
 }
 .changelog-date { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.changelog-title {
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+  margin-bottom: 8px;
+}
 .changelog-desc { font-size: 14.5px; color: var(--text-secondary); line-height: 1.7; }
+.changelog-changes {
+  list-style: none; padding-left: 0;
+  margin-top: 4px;
+}
+.changelog-changes li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 4px;
+}
+.changelog-changes li::before {
+  content: '✦';
+  position: absolute; left: 0; top: 0;
+  color: var(--accent);
+  font-size: 12px;
+}
 
 /* ========== 弹窗 ========== */
 .modal-overlay {

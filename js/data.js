@@ -18,7 +18,59 @@ const DataStore = {
     homeCards: [],
     diaries: [],
     memos: [],
-    bangumiList: []
+    bangumiList: [],
+    changelog: [
+      {
+        version: 'v1.4.0',
+        date: '2026-08-12',
+        title: '交互式追番 + 卡片更加透明 + 更新日志',
+        changes: [
+          '追番列表改为本地手动管理（个人空间可一键添加/删除）',
+          '各版块卡片透明度提升，背景图片更清晰可见',
+          '关于页增加版本更新日志，记录每次迭代替革'
+        ]
+      },
+      {
+        version: 'v1.3.0',
+        date: '2026-08-11',
+        title: '背景轮播优化 + 内容透明化',
+        changes: [
+          '背景轮播控制器独立层级，所有页面均可切换图片',
+          '去掉顶部覆盖模式，背景全屏覆盖',
+          '所有卡片增加 backdrop-filter 毛玻璃效果'
+        ]
+      },
+      {
+        version: 'v1.2.0',
+        date: '2026-08-10',
+        title: '界面细节优化',
+        changes: [
+          '日历卡片重设计（周一起始 + 今天蓝色边框）',
+          '内容区改半透明，不遮挡背景图',
+          '备忘录/待办可在首页直接添加'
+        ]
+      },
+      {
+        version: 'v1.1.0',
+        date: '2026-08-09',
+        title: '功能扩充',
+        changes: [
+          '日记板块上线（标题 + 正文 + 时间戳）',
+          '个人空间可编辑头像/昵称/简介',
+          'GitHub Pages 部署上线'
+        ]
+      },
+      {
+        version: 'v1.0.0',
+        date: '2026-08-08',
+        title: '初版上线',
+        changes: [
+          '首页 / 日记 / 个人空间 / GitHub / 关于 五大板块',
+          '全屏背景轮播 + 日/夜模式切换',
+          '可自由编辑内容，本地存储'
+        ]
+      }
+    ]
   },
 
   // 获取所有背景图片
@@ -94,6 +146,16 @@ const DataStore = {
     const diaries = this.getDiaries().filter(d => d.id !== id);
     this.saveDiaries(diaries);
   },
+
+  // --- 版本更新日志 ---
+  getChangelog() {
+    const stored = this.get('changelog');
+    if (Array.isArray(stored) && stored.length > 0) return stored;
+    // 本地没有就用默认的（并保存一份，供后续编辑）
+    this.saveChangelog(this.defaults.changelog);
+    return this.defaults.changelog;
+  },
+  saveChangelog(list) { this.set('changelog', list); },
 
   // --- 追番列表（手动管理）---
   getBangumi() { return this.get('bangumiList') || []; },

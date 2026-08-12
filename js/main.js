@@ -25,6 +25,7 @@
     initProfile();
     loadBangumi();
     initBangumiEvents();
+    renderChangelog();
     initAboutDate();
   }
 
@@ -536,9 +537,32 @@
 
   // ========== 11. 关于页日期 ==========
   function initAboutDate() {
-    $('#aboutInitDate').textContent = new Date().toLocaleDateString('zh-CN', {
+    const el = $('#aboutInitDate');
+    if (el) el.textContent = new Date().toLocaleDateString('zh-CN', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
+  }
+
+  // ========== 12. 渲染更新日志 ==========
+  function renderChangelog() {
+    const container = $('#changelog');
+    if (!container) return;
+    const list = DataStore.getChangelog();
+    container.innerHTML = list.map(item => {
+      const v = $escape(item.version || '');
+      const d = $escape(item.date || '');
+      const t = $escape(item.title || '');
+      const changes = Array.isArray(item.changes) ? item.changes : [];
+      const changesHtml = changes.map(c => `<li>${$escape(c)}</li>`).join('');
+      return `
+        <div class="changelog-item">
+          <div class="changelog-version">${v}</div>
+          <div class="changelog-date">${d}</div>
+          ${t ? `<div class="changelog-title">${t}</div>` : ''}
+          ${changesHtml ? `<ul class="changelog-changes">${changesHtml}</ul>` : ''}
+        </div>
+      `;
+    }).join('');
   }
 
   // ========== HTML 转义 ==========
