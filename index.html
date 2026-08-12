@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="day">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>milai - 未来的秘密</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== 导航栏 ===== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-brand">milai</div>
+    <button class="nav-hamburger" id="navHamburger" aria-label="菜单">☰</button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#home" class="nav-link active" data-page="home">首页</a></li>
+      <li><a href="#diary" class="nav-link" data-page="diary">日记</a></li>
+      <li><a href="#profile" class="nav-link" data-page="profile">个人空间</a></li>
+      <li><a href="https://github.com/lyq20051122-cmd" class="nav-link nav-external" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="#about" class="nav-link" data-page="about">关于</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" title="切换日/夜模式">🌙</button>
+    </div>
+  </nav>
+
+  <!-- ===== 全局背景轮播（图片层） ===== -->
+  <div class="global-bg" id="globalBg">
+    <div class="bg-slider" id="bgSlider">
+      <!-- 图片由 JS 动态插入 -->
+    </div>
+  </div>
+
+  <!-- ===== 背景控制元素（独立于背景层，避免层叠上下文遮挡） ===== -->
+  <button class="bg-arrow bg-arrow-left" id="bgArrowLeft">‹</button>
+  <button class="bg-arrow bg-arrow-right" id="bgArrowRight">›</button>
+  <div class="bg-dots" id="bgDots"></div>
+
+  <!-- ===== 首页 ===== -->
+  <section class="page active" id="page-home">
+
+    <!-- 主内容三栏布局 -->
+    <div class="main-layout" id="mainLayout">
+      <!-- 左侧栏 -->
+      <aside class="sidebar-left" id="sidebarLeft">
+        <div class="profile-card">
+          <div class="avatar-wrapper">
+            <img class="avatar-img" id="navAvatar" src="touxiang/xy11.png" alt="头像">
+          </div>
+          <h2 class="nickname" id="navNickname">未来</h2>
+          <p class="bio-text" id="navBio">点击个人空间编辑简介</p>
+          <a class="bilibili-link" id="navBilibili" href="https://space.bilibili.com/599210852" target="_blank" rel="noopener"
+             title="访问B站空间">
+            <svg class="bilibili-icon" viewBox="0 0 1024 1024" width="24" height="24">
+              <path d="M880.6 228l-101.4-94.2c-16.8-15.6-43.4-15-59.4 1.4L683 174.6c-47.2-17.6-98.2-27.4-151.4-27.4-55.6 0-108.6 10.8-157.4 30l-37.6-40.2c-16-16.4-42.6-17-59.4-1.4L175.8 230c-16.8 15.6-18 41.8-2.6 58.6l61.4 65.8C193 410.6 168 477.2 168 549.8c0 188 164.6 340.6 367.4 340.6 202.8 0 367.4-152.6 367.4-340.6 0-75.4-26.8-144.8-71.8-200.2l60.6-65c15.4-16.8 14.2-43-2.4-58.6zM535.4 812.2c-158.2 0-286.6-117.8-286.6-262.8 0-145 128.4-262.8 286.6-262.8S822 404.4 822 549.4c0 145-128.4 262.8-286.6 262.8zM404.6 443.8c-27.6 0-50 21.8-50 48.6s22.4 48.6 50 48.6 50-21.8 50-48.6-22.4-48.6-50-48.6zm161.6 0c-27.6 0-50 21.8-50 48.6s22.4 48.6 50 48.6 50-21.8 50-48.6-22.4-48.6-50-48.6z"/>
+            </svg>
+          </a>
+        </div>
+
+        <!-- 备忘录卡片 -->
+        <div class="memo-card">
+          <div class="memo-header">
+            <span>📝 备忘录</span>
+            <button class="memo-add-btn" id="memoAddBtn" title="添加备忘">+</button>
+          </div>
+          <ul class="memo-list" id="memoList"></ul>
+          <div class="memo-input-wrap" id="memoInputWrap" style="display:none;">
+            <input type="text" class="memo-input" id="memoInput" placeholder="输入待办事项...">
+            <button class="memo-confirm-btn" id="memoConfirmBtn">确定</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 中间内容区 -->
+      <main class="content-center" id="contentCenter">
+        <div class="search-bar">
+          <input type="text" class="search-input" id="searchInput" placeholder="搜索内容...">
+        </div>
+        <div class="card-list" id="cardList">
+          <!-- 卡片由 JS 渲染 -->
+        </div>
+        <button class="add-card-btn" id="addCardBtn">+ 新建内容</button>
+      </main>
+
+      <!-- 右侧栏 -->
+      <aside class="sidebar-right" id="sidebarRight">
+        <!-- 日历 -->
+        <div class="calendar-card">
+          <div class="calendar-header">
+            <button class="cal-prev" id="calPrev">«</button>
+            <span class="cal-month" id="calMonth"></span>
+            <button class="cal-next" id="calNext">»</button>
+          </div>
+          <table class="cal-table">
+            <thead><tr><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr></thead>
+            <tbody id="calBody"></tbody>
+          </table>
+          <button class="cal-today-btn" id="calTodayBtn">今天</button>
+        </div>
+        <!-- 时钟 -->
+        <div class="clock-card">
+          <div class="clock-time" id="clockTime">00:00:00</div>
+          <div class="clock-date" id="clockDate"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===== 日记页 ===== -->
+  <section class="page" id="page-diary">
+    <div class="diary-container">
+      <div class="diary-editor">
+        <h2 class="section-title">写日记</h2>
+        <input type="text" class="diary-title-input" id="diaryTitleInput" placeholder="标题...">
+        <textarea class="diary-body-input" id="diaryBodyInput" placeholder="今天发生了什么..."></textarea>
+        <button class="diary-publish-btn" id="diaryPublishBtn">发布日记</button>
+      </div>
+      <div class="diary-list" id="diaryList">
+        <!-- 日记卡片由 JS 渲染 -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 个人空间页 ===== -->
+  <section class="page" id="page-profile">
+    <div class="profile-container">
+      <h2 class="section-title">个人空间</h2>
+      <div class="profile-form">
+        <div class="form-group">
+          <label>头像</label>
+          <div class="avatar-upload">
+            <img class="avatar-preview" id="profileAvatarPreview" src="touxiang/xy11.png" alt="头像预览">
+            <input type="file" id="avatarFileInput" accept="image/*" style="display:none;">
+            <button class="btn-small" id="avatarChangeBtn">更换头像</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="profileNickname">昵称</label>
+          <input type="text" id="profileNickname" class="form-input" placeholder="你的昵称">
+        </div>
+        <div class="form-group">
+          <label for="profileBio">个人简介</label>
+          <textarea id="profileBio" class="form-textarea" placeholder="介绍一下自己吧..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="profileBilibili">B站空间链接</label>
+          <input type="text" id="profileBilibili" class="form-input" placeholder="https://space.bilibili.com/...">
+        </div>
+        <button class="save-profile-btn" id="saveProfileBtn">保存修改</button>
+      </div>
+
+      <!-- B站追番列表 -->
+      <div class="bangumi-section">
+        <div class="bangumi-header">
+          <h3 class="subsection-title">
+           <svg class="bilibili-icon" viewBox="0 0 1024 1024" width="20" height="20">
+             <path d="M880.6 228l-101.4-94.2c-16.8-15.6-43.4-15-59.4 1.4L683 174.6c-47.2-17.6-98.2-27.4-151.4-27.4-55.6 0-108.6 10.8-157.4 30l-37.6-40.2c-16-16.4-42.6-17-59.4-1.4L175.8 230c-16.8 15.6-18 41.8-2.6 58.6l61.4 65.8C193 410.6 168 477.2 168 549.8c0 188 164.6 340.6 367.4 340.6 202.8 0 367.4-152.6 367.4-340.6 0-75.4-26.8-144.8-71.8-200.2l60.6-65c15.4-16.8 14.2-43-2.4-58.6zM535.4 812.2c-158.2 0-286.6-117.8-286.6-262.8 0-145 128.4-262.8 286.6-262.8S822 404.4 822 549.4c0 145-128.4 262.8-286.6 262.8zM404.6 443.8c-27.6 0-50 21.8-50 48.6s22.4 48.6 50 48.6 50-21.8 50-48.6-22.4-48.6-50-48.6zm161.6 0c-27.6 0-50 21.8-50 48.6s22.4 48.6 50 48.6 50-21.8 50-48.6-22.4-48.6-50-48.6z"/>
+           </svg>
+           追番列表
+          </h3>
+          <button class="bangumi-add-btn" id="bangumiAddBtn" type="button" title="添加追番">+ 添加</button>
+        </div>
+        <div class="bangumi-grid" id="bangumiGrid">
+          <p class="loading-text">还没有追番，点右上角「+ 添加」开始添加吧～</p>
+        </div>
+      </div>
+
+      <!-- 追番添加弹窗 -->
+      <div class="modal-overlay" id="bangumiModal" style="display:none;">
+        <div class="modal-box">
+          <h3 class="modal-title">添加追番</h3>
+          <div class="modal-body">
+            <label class="bangumi-label">番剧名称</label>
+            <input type="text" id="bangumiTitleInput" placeholder="例如：孤独摇滚" maxlength="50">
+
+            <label class="bangumi-label">封面图 URL <span class="bangumi-hint">（右键 B 站封面 → 复制图片地址）</span></label>
+            <input type="text" id="bangumiCoverInput" placeholder="https://i0.hdslb.com/bfs/bangumi/xxx.jpg">
+
+            <label class="bangumi-label">番剧链接 <span class="bangumi-hint">（B 站番剧页 URL，可留空）</span></label>
+            <input type="text" id="bangumiUrlInput" placeholder="https://www.bilibili.com/bangumi/play/ss12345">
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-cancel" id="bangumiCancelBtn" type="button">取消</button>
+            <button class="btn btn-primary" id="bangumiSaveBtn" type="button">添加</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 关于页 ===== -->
+  <section class="page" id="page-about">
+    <div class="about-container">
+      <h2 class="section-title">关于 milai</h2>
+      <div class="changelog" id="changelog">
+        <div class="changelog-item">
+          <div class="changelog-version">v1.0.0</div>
+          <div class="changelog-date" id="aboutInitDate"></div>
+          <div class="changelog-desc">milai 博客初版上线 — 首页、日记、个人空间、GitHub、关于五大板块</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 通用弹窗（编辑卡片/日记） ===== -->
+  <div class="modal-overlay" id="modalOverlay" style="display:none;">
+    <div class="modal-box">
+      <h3 class="modal-title" id="modalTitle">编辑</h3>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" id="modalCancel">取消</button>
+        <button class="btn btn-primary" id="modalConfirm">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
