@@ -463,7 +463,8 @@
         <div class="bangumi-card" data-id="${b.id}">
           <a href="${safeUrl}" ${target} class="bangumi-link">
             <img class="bangumi-cover" src="${safeCover}" alt="${safeTitle}" loading="lazy"
-                 onerror="this.style.opacity=0.3;this.alt='封面加载失败'">
+                 referrerpolicy="no-referrer"
+                 onerror="this.onerror=null;this.src='https://placehold.co/240x320/4a6cf7/fff?text='+encodeURIComponent(${JSON.stringify('封面')})+'&font=noto-sans-sc';this.alt='封面加载失败'">
             <div class="bangumi-name">${safeTitle}</div>
           </a>
           <button class="bangumi-del-btn" type="button" title="删除追番" data-id="${b.id}">×</button>
