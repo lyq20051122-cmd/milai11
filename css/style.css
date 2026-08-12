@@ -6,9 +6,9 @@
 :root {
   /* 日间模式 */
   --bg-primary: transparent;
-  --bg-secondary: rgba(255,255,255,0.32);
-  --bg-card: rgba(255,255,255,0.38);
-  --bg-navbar: rgba(255,255,255,0.25);
+  --bg-secondary: rgba(255,255,255,0.22);
+  --bg-card: rgba(255,255,255,0.26);
+  --bg-navbar: rgba(255,255,255,0.18);
   --text-primary: #1a1a2e;
   --text-secondary: #555555;
   --text-muted: #888888;
@@ -24,9 +24,9 @@
 
 [data-theme="night"] {
   --bg-primary: transparent;
-  --bg-secondary: rgba(22,27,34,0.32);
-  --bg-card: rgba(22,27,34,0.38);
-  --bg-navbar: rgba(13,17,23,0.25);
+  --bg-secondary: rgba(22,27,34,0.22);
+  --bg-card: rgba(22,27,34,0.26);
+  --bg-navbar: rgba(13,17,23,0.18);
   --text-primary: #e6edf3;
   --text-secondary: #b0b8c4;
   --text-muted: #6e7681;
