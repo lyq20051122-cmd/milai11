@@ -85,6 +85,32 @@ a:hover { color: var(--accent-hover); }
 .nav-external::after { content: ' ↗'; font-size: 12px; opacity: 0.6; }
 
 .nav-actions { display: flex; align-items: center; gap: 10px; }
+
+/* 同步状态图标 */
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.sync-icon {
+  font-size: 20px;
+  transition: all 0.3s;
+}
+.sync-status.offline .sync-icon { color: #999; }
+.sync-status.syncing .sync-icon { color: #4a6cf7; animation: spin 1s linear infinite; }
+.sync-status.synced .sync-icon { color: #22c55e; }
+.sync-status.error .sync-icon { color: #ef4444; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 .theme-toggle {
   background: none; border: 1px solid var(--border-color);
   border-radius: 8px; padding: 6px 12px; cursor: pointer;

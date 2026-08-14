@@ -10,8 +10,65 @@
   const $$ = (sel) => document.querySelectorAll(sel);
   const $escape = (str) => String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+  // 确保已解锁（用于写入操作）
+  async function ensureUnlocked() {
+    if (typeof SyncManager === 'undefined') return true; // 如果没有 sync.js，跳过检查
+    if (SyncManager.isUnlocked()) return true;
+    
+    const key = prompt('请输入主密钥以同步到云端：');
+    if (key) {
+      SyncManager.unlock(key);
+      // 尝试同步一次验证密钥是否正确
+      const success = await DataStore.syncToCloud();
+      if (success) {
+        updateSyncStatus('synced');
+        return true;
+      } else {
+        alert('主密钥错误或网络问题，请重试');
+        SyncManager.lock();
+        return false;
+      }
+    }
+    return false;
+  }
+
+  // 更新同步状态图标
+  function updateSyncStatus(status) {
+    const el = $('#syncStatus');
+    if (!el) return;
+    el.className = 'sync-status ' + status;
+    const titles = {
+      offline: '离线模式（仅本地缓存）',
+      syncing: '正在同步...',
+      synced: '已同步到云端',
+      error: '同步失败，点击重试'
+    };
+    el.title = titles[status] || '';
+  }
+
   // ========== 初始化 ==========
-  function init() {
+  async function init() {
+    // 尝试从云端加载数据
+    updateSyncStatus('syncing');
+    const loaded = await DataStore.loadFromCloud();
+    if (loaded) {
+      updateSyncStatus('synced');
+    } else {
+      updateSyncStatus('offline');
+    }
+    
+    // 绑定同步图标点击事件（点击重试同步）
+    const syncEl = $('#syncStatus');
+    if (syncEl) {
+      syncEl.addEventListener('click', async () => {
+        if (syncEl.classList.contains('error')) {
+          updateSyncStatus('syncing');
+          const success = await DataStore.loadFromCloud();
+          updateSyncStatus(success ? 'synced' : 'error');
+        }
+      });
+    }
+    
     initTheme();
     initNav();
     initBgSlider();
@@ -62,11 +119,13 @@
   function initTheme() {
     const theme = DataStore.getTheme();
     applyTheme(theme);
-    $('#themeToggle').addEventListener('click', () => {
+    $('#themeToggle').addEventListener('click', async () => {
       const current = DataStore.getTheme();
       const next = current === 'day' ? 'night' : 'day';
-      DataStore.setTheme(next);
-      applyTheme(next);
+      if (await ensureUnlocked()) {
+        DataStore.setTheme(next);
+        applyTheme(next);
+      }
     });
   }
 
@@ -99,11 +158,13 @@
       dotsWrap.appendChild(dot);
     });
 
-    function showSlide(newIdx) {
+    async function showSlide(newIdx) {
       index = (newIdx + images.length) % images.length;
       $$('.bg-slide').forEach((s, i) => s.classList.toggle('active', i === index));
       $$('.bg-dot').forEach((d, i) => d.classList.toggle('active', i === index));
-      DataStore.setBgIndex(index);
+      if (await ensureUnlocked()) {
+        DataStore.setBgIndex(index);
+      }
     }
 
     function goTo(idx) { showSlide(idx); }
@@ -152,10 +213,12 @@
       btn.addEventListener('click', () => openCardEditor(+btn.dataset.id));
     });
     list.querySelectorAll('.delete').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (confirm('确定删除这条内容吗？')) {
-          DataStore.deleteHomeCard(+btn.dataset.id);
-          renderHomeCards($('#searchInput').value);
+          if (await ensureUnlocked()) {
+            DataStore.deleteHomeCard(+btn.dataset.id);
+            renderHomeCards($('#searchInput').value);
+          }
         }
       });
     });
@@ -197,17 +260,19 @@
     editingCardId = null;
   }
 
-  function confirmCardEdit() {
+  async function confirmCardEdit() {
     const title = $('#mTitle').value.trim();
     const body = $('#mBody').value.trim();
     if (!body) { alert('请输入内容'); return; }
-    if (editingCardId) {
-      DataStore.updateHomeCard(editingCardId, { title, body });
-    } else {
-      DataStore.addHomeCard({ title, body });
+    if (await ensureUnlocked()) {
+      if (editingCardId) {
+        DataStore.updateHomeCard(editingCardId, { title, body });
+      } else {
+        DataStore.addHomeCard({ title, body });
+      }
+      closeModal();
+      renderHomeCards($('#searchInput').value);
     }
-    closeModal();
-    renderHomeCards($('#searchInput').value);
   }
 
   // ========== 5. 备忘录 ==========
@@ -237,26 +302,34 @@
     `).join('');
 
     list.querySelectorAll('.memo-checkbox').forEach(cb => {
-      cb.addEventListener('change', () => {
-        DataStore.toggleMemo(+cb.closest('.memo-item').dataset.id);
-        renderMemos();
+      cb.addEventListener('change', async () => {
+        if (await ensureUnlocked()) {
+          DataStore.toggleMemo(+cb.closest('.memo-item').dataset.id);
+          renderMemos();
+        } else {
+          cb.checked = !cb.checked; // 恢复原状态
+        }
       });
     });
     list.querySelectorAll('.memo-delete-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        DataStore.deleteMemo(+btn.closest('.memo-item').dataset.id);
-        renderMemos();
+      btn.addEventListener('click', async () => {
+        if (await ensureUnlocked()) {
+          DataStore.deleteMemo(+btn.closest('.memo-item').dataset.id);
+          renderMemos();
+        }
       });
     });
   }
 
-  function addMemoItem() {
+  async function addMemoItem() {
     const input = $('#memoInput');
     const text = input.value.trim();
     if (!text) return;
-    DataStore.addMemo(text);
-    input.value = '';
-    renderMemos();
+    if (await ensureUnlocked()) {
+      DataStore.addMemo(text);
+      input.value = '';
+      renderMemos();
+    }
   }
 
   // ========== 6. 日历（周一开头，参考截图风格） ==========
@@ -334,14 +407,16 @@
     $('#diaryPublishBtn').addEventListener('click', publishDiary);
   }
 
-  function publishDiary() {
+  async function publishDiary() {
     const title = $('#diaryTitleInput').value.trim();
     const body = $('#diaryBodyInput').value.trim();
     if (!title && !body) { alert('请至少填写标题或正文'); return; }
-    DataStore.addDiary({ title: title || '无标题', body });
-    $('#diaryTitleInput').value = '';
-    $('#diaryBodyInput').value = '';
-    renderDiaries();
+    if (await ensureUnlocked()) {
+      DataStore.addDiary({ title: title || '无标题', body });
+      $('#diaryTitleInput').value = '';
+      $('#diaryBodyInput').value = '';
+      renderDiaries();
+    }
   }
 
   function renderDiaries() {
@@ -367,10 +442,12 @@
       btn.addEventListener('click', () => openDiaryEditor(+btn.dataset.id));
     });
     list.querySelectorAll('.delete-diary').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (confirm('确定删除这篇日记吗？')) {
-          DataStore.deleteDiary(+btn.dataset.id);
-          renderDiaries();
+          if (await ensureUnlocked()) {
+            DataStore.deleteDiary(+btn.dataset.id);
+            renderDiaries();
+          }
         }
       });
     });
@@ -389,14 +466,16 @@
     $('#modalOverlay').style.display = 'flex';
     // 临时替换确认回调
     const origConfirm = $('#modalConfirm').onclick;
-    $('#modalConfirm').onclick = () => {
+    $('#modalConfirm').onclick = async () => {
       const title = $('#mTitle').value.trim() || '无标题';
       const body = $('#mBody').value.trim();
       if (!body) { alert('请输入正文'); return; }
-      DataStore.updateDiary(editingDiaryId, { title, body });
-      closeModal();
-      $('#modalConfirm').onclick = confirmCardEdit; // 恢复
-      renderDiaries();
+      if (await ensureUnlocked()) {
+        DataStore.updateDiary(editingDiaryId, { title, body });
+        closeModal();
+        $('#modalConfirm').onclick = confirmCardEdit; // 恢复
+        renderDiaries();
+      }
     };
   }
 
@@ -416,15 +495,17 @@
     $('#avatarFileInput').addEventListener('change', handleAvatarChange);
   }
 
-  function saveProfile() {
-    DataStore.saveProfile({
-      nickname: $('#profileNickname').value.trim(),
-      bio: $('#profileBio').value.trim(),
-      bilibiliUrl: $('#profileBilibili').value.trim()
-    });
-    const p = DataStore.getProfile();
-    syncProfileToHome(p);
-    alert('保存成功！');
+  async function saveProfile() {
+    if (await ensureUnlocked()) {
+      DataStore.saveProfile({
+        nickname: $('#profileNickname').value.trim(),
+        bio: $('#profileBio').value.trim(),
+        bilibiliUrl: $('#profileBilibili').value.trim()
+      });
+      const p = DataStore.getProfile();
+      syncProfileToHome(p);
+      alert('保存成功！');
+    }
   }
 
   function syncProfileToHome(p) {
@@ -438,11 +519,13 @@
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      $('#profileAvatarPreview').src = ev.target.result;
-      // 存为 base64（小头像可行）
-      DataStore.set('avatar', ev.target.result);
-      $('#navAvatar').src = ev.target.result;
+    reader.onload = async (ev) => {
+      if (await ensureUnlocked()) {
+        $('#profileAvatarPreview').src = ev.target.result;
+        // 存为 base64（小头像可行）
+        DataStore.set('avatar', ev.target.result);
+        $('#navAvatar').src = ev.target.result;
+      }
     };
     reader.readAsDataURL(file);
   }
@@ -500,14 +583,16 @@
       }
       const saveBtn = $('#bangumiSaveBtn');
       if (saveBtn && !saveBtn.dataset.bound) {
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', async () => {
           const title = $('#bangumiTitleInput').value.trim();
           const cover = $('#bangumiCoverInput').value.trim();
           const url   = $('#bangumiUrlInput').value.trim();
           if (!title) { alert('请输入番剧名称'); $('#bangumiTitleInput').focus(); return; }
-          DataStore.addBangumi({ title, cover, url });
-          closeBangumiModal();
-          loadBangumi();
+          if (await ensureUnlocked()) {
+            DataStore.addBangumi({ title, cover, url });
+            closeBangumiModal();
+            loadBangumi();
+          }
         });
         saveBtn.dataset.bound = '1';
       }
@@ -518,7 +603,7 @@
       }
       const gridEl = $('#bangumiGrid');
       if (gridEl && !gridEl.dataset.delBound) {
-        gridEl.addEventListener('click', (e) => {
+        gridEl.addEventListener('click', async (e) => {
           const btn = e.target.closest('.bangumi-del-btn');
           if (!btn) return;
           e.preventDefault();
@@ -527,8 +612,10 @@
           const card = btn.closest('.bangumi-card');
           const title = card?.querySelector('.bangumi-name')?.textContent || '该追番';
           if (confirm(`确定要删除「${title}」吗？`)) {
-            DataStore.deleteBangumi(id);
-            loadBangumi();
+            if (await ensureUnlocked()) {
+              DataStore.deleteBangumi(id);
+              loadBangumi();
+            }
           }
         });
         gridEl.dataset.delBound = '1';

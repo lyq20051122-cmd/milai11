@@ -97,6 +97,47 @@ const DataStore = {
 
   set(key, value) {
     localStorage.setItem('milai_' + key, JSON.stringify(value));
+    // 同步到云端（如果已解锁）
+    if (typeof SyncManager !== 'undefined' && SyncManager.isUnlocked()) {
+      this.syncToCloud();
+    }
+  },
+
+  // 从云端加载所有数据
+  async loadFromCloud() {
+    if (typeof SyncManager === 'undefined') return false;
+    const data = await SyncManager.loadFromCloud();
+    if (data) {
+      // 更新 localStorage
+      for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+          localStorage.setItem('milai_' + key, JSON.stringify(data[key]));
+        }
+      }
+      return true;
+    }
+    return false;
+  },
+
+  // 同步所有数据到云端
+  async syncToCloud() {
+    if (typeof SyncManager === 'undefined') return false;
+    if (!SyncManager.isUnlocked()) return false;
+    
+    const data = {};
+    for (const key in this.defaults) {
+      if (this.defaults.hasOwnProperty(key)) {
+        data[key] = this.get(key);
+      }
+    }
+    
+    try {
+      await SyncManager.saveToCloud(data);
+      return true;
+    } catch (err) {
+      console.error('同步失败:', err);
+      return false;
+    }
   },
 
   // --- 首页卡片 ---
