@@ -10,6 +10,71 @@
   const $$ = (sel) => document.querySelectorAll(sel);
   const $escape = (str) => String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+  // ========== 图片处理 ==========
+  // 压缩图片：最大边长 800px，质量 0.7
+  function compressImage(file, maxWidth = 800, quality = 0.7) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width;
+          let h = img.height;
+          if (w > maxWidth || h > maxWidth) {
+            if (w > h) {
+              h = Math.round(h * maxWidth / w);
+              w = maxWidth;
+            } else {
+              w = Math.round(w * maxWidth / h);
+              h = maxWidth;
+            }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // 渲染图片网格（缩略图 120px）
+  function renderImageGrid(images, className = 'card-images') {
+    if (!images || images.length === 0) return '';
+    return `<div class="${className}">${images.map(src => `<img src="${src}" class="card-image" onclick="showImageViewer('${src.replace(/'/g, "\\'")}')" style="cursor:pointer;">`).join('')}</div>`;
+  }
+
+  // 放大查看图片
+  function showImageViewer(src) {
+    const overlay = document.createElement('div');
+    overlay.className = 'image-viewer-overlay';
+    overlay.onclick = () => overlay.remove();
+    overlay.innerHTML = `<img src="${src}" class="viewer-image">`;
+    document.body.appendChild(overlay);
+  }
+
+  // 图片压缩+预览管理（用于弹窗编辑器）
+  let currentImages = [];
+
+  function renderImagePreview(list, images) {
+    list.innerHTML = images.map((src, i) => `
+      <div class="image-preview-item">
+        <img src="${src}" alt="预览">
+        <button class="remove-img-btn" type="button" data-idx="${i}">×</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.remove-img-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        images.splice(+btn.dataset.idx, 1);
+        renderImagePreview(list, images);
+      });
+    });
+  }
+
   // 确保已解锁（用于写入操作）
   async function ensureUnlocked() {
     if (typeof SyncManager === 'undefined') return true; // 如果没有 sync.js，跳过检查
@@ -204,6 +269,7 @@
         </div>
         <div class="card-title">${escHtml(card.title || '无标题')}</div>
         <div class="card-body">${escHtml(card.body || '')}</div>
+        ${renderImageGrid(card.images)}
         <div class="card-time">${card.createdAt || ''}</div>
       </div>
     `).join('');
@@ -246,11 +312,34 @@
   function openCardEditor(id) {
     editingCardId = id;
     const card = id ? DataStore.getHomeCards().find(c => c.id === id) : null;
+    currentImages = card && card.images ? [...card.images] : [];
     $('#modalTitle').textContent = id ? '编辑内容' : '新建内容';
     $('#modalBody').innerHTML = `
       <input type="text" id="mTitle" placeholder="标题（可选）" value="${escHtml(card ? card.title : '')}">
       <textarea id="mBody" placeholder="内容...">${escHtml(card ? card.body : '')}</textarea>
+      <div class="image-upload-section">
+        <button type="button" id="addImageBtn" class="btn-small">+ 添加图片</button>
+        <input type="file" id="imageFileInput" accept="image/*" multiple style="display:none;">
+        <div class="image-preview-list" id="imagePreviewList"></div>
+      </div>
     `;
+    // 渲染已有图片预览
+    if (currentImages.length > 0) {
+      const list = $('#imagePreviewList');
+      renderImagePreview(list, currentImages);
+    }
+    // 绑定图片上传事件
+    $('#addImageBtn').addEventListener('click', () => $('#imageFileInput').click());
+    $('#imageFileInput').addEventListener('change', async (e) => {
+      const files = e.target.files;
+      if (!files.length) return;
+      for (const file of files) {
+        const base64 = await compressImage(file);
+        currentImages.push(base64);
+      }
+      renderImagePreview($('#imagePreviewList'), currentImages);
+      e.target.value = '';
+    });
     $('#modalOverlay').style.display = 'flex';
     setTimeout(() => $('#mTitle').focus(), 100);
   }
@@ -266,9 +355,9 @@
     if (!body) { alert('请输入内容'); return; }
     if (await ensureUnlocked()) {
       if (editingCardId) {
-        DataStore.updateHomeCard(editingCardId, { title, body });
+        DataStore.updateHomeCard(editingCardId, { title, body, images: [...currentImages] });
       } else {
-        DataStore.addHomeCard({ title, body });
+        DataStore.addHomeCard({ title, body, images: [...currentImages] });
       }
       closeModal();
       renderHomeCards($('#searchInput').value);
@@ -402,19 +491,36 @@
   }
 
   // ========== 8. 日记 ==========
+  window.diaryImages = [];
   function initDiary() {
     renderDiaries();
     $('#diaryPublishBtn').addEventListener('click', publishDiary);
+    // 日记发布页图片上传
+    $('#diaryAddImageBtn').addEventListener('click', () => $('#diaryImageFileInput').click());
+    $('#diaryImageFileInput').addEventListener('change', async (e) => {
+      const files = e.target.files;
+      if (!files.length) return;
+      for (const file of files) {
+        const base64 = await compressImage(file);
+        window.diaryImages.push(base64);
+      }
+      renderImagePreview($('#diaryImagePreviewList'), window.diaryImages);
+      e.target.value = '';
+    });
   }
 
   async function publishDiary() {
     const title = $('#diaryTitleInput').value.trim();
     const body = $('#diaryBodyInput').value.trim();
+    const images = window.diaryImages || [];
     if (!title && !body) { alert('请至少填写标题或正文'); return; }
     if (await ensureUnlocked()) {
-      DataStore.addDiary({ title: title || '无标题', body });
+      DataStore.addDiary({ title: title || '无标题', body, images });
       $('#diaryTitleInput').value = '';
       $('#diaryBodyInput').value = '';
+      window.diaryImages = [];
+      const previewList = $('#diaryImagePreviewList');
+      if (previewList) previewList.innerHTML = '';
       renderDiaries();
     }
   }
@@ -434,6 +540,7 @@
         </div>
         <div class="diary-card-title">${escHtml(d.title)}</div>
         <div class="diary-card-body">${escHtml(d.body)}</div>
+        ${renderImageGrid(d.images, 'diary-images')}
         <div class="diary-card-time">📅 ${d.createdAt}</div>
       </div>
     `).join('');
@@ -458,11 +565,33 @@
   function openDiaryEditor(id) {
     editingDiaryId = id;
     const diary = DataStore.getDiaries().find(d => d.id === id);
+    currentImages = diary && diary.images ? [...diary.images] : [];
     $('#modalTitle').textContent = '编辑日记';
     $('#modalBody').innerHTML = `
       <input type="text" id="mTitle" placeholder="标题..." value="${escHtml(diary.title)}">
       <textarea id="mBody">${escHtml(diary.body)}</textarea>
+      <div class="image-upload-section">
+        <button type="button" id="addImageBtn" class="btn-small">+ 添加图片</button>
+        <input type="file" id="imageFileInput" accept="image/*" multiple style="display:none;">
+        <div class="image-preview-list" id="imagePreviewList"></div>
+      </div>
     `;
+    // 渲染已有图片预览
+    if (currentImages.length > 0) {
+      renderImagePreview($('#imagePreviewList'), currentImages);
+    }
+    // 绑定图片上传事件
+    $('#addImageBtn').addEventListener('click', () => $('#imageFileInput').click());
+    $('#imageFileInput').addEventListener('change', async (e) => {
+      const files = e.target.files;
+      if (!files.length) return;
+      for (const file of files) {
+        const base64 = await compressImage(file);
+        currentImages.push(base64);
+      }
+      renderImagePreview($('#imagePreviewList'), currentImages);
+      e.target.value = '';
+    });
     $('#modalOverlay').style.display = 'flex';
     // 临时替换确认回调
     const origConfirm = $('#modalConfirm').onclick;
@@ -471,7 +600,7 @@
       const body = $('#mBody').value.trim();
       if (!body) { alert('请输入正文'); return; }
       if (await ensureUnlocked()) {
-        DataStore.updateDiary(editingDiaryId, { title, body });
+        DataStore.updateDiary(editingDiaryId, { title, body, images: [...currentImages] });
         closeModal();
         $('#modalConfirm').onclick = confirmCardEdit; // 恢复
         renderDiaries();
