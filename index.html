@@ -116,6 +116,11 @@
         <h2 class="section-title">写日记</h2>
         <input type="text" class="diary-title-input" id="diaryTitleInput" placeholder="标题...">
         <textarea class="diary-body-input" id="diaryBodyInput" placeholder="今天发生了什么..."></textarea>
+        <div class="image-upload-section">
+          <button type="button" id="diaryAddImageBtn" class="btn-small">+ 添加图片</button>
+          <input type="file" id="diaryImageFileInput" accept="image/*" multiple style="display:none;">
+          <div class="image-preview-list" id="diaryImagePreviewList"></div>
+        </div>
         <button class="diary-publish-btn" id="diaryPublishBtn">发布日记</button>
       </div>
       <div class="diary-list" id="diaryList">
